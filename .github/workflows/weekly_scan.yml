@@ -1,0 +1,28 @@
+name: Weekly Supertrend + 10EMA Scan
+
+on:
+  schedule:
+    # Saturday 07:00 UTC - after Friday's weekly candle closes
+    - cron: "0 7 * * 6"
+  workflow_dispatch:      # manual run button
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Run screener
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+        run: python supertrend_screener.py
+      - name: Upload report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: supertrend-report
+          path: supertrend_report.html
