@@ -6,6 +6,11 @@ on:
     - cron: "0 7 * * 6"
   workflow_dispatch:      # manual run button
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 jobs:
   scan:
     runs-on: ubuntu-latest
@@ -21,8 +26,23 @@ jobs:
           EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
           EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
         run: python supertrend_screener.py
+      - name: Prepare Pages site
+        run: mkdir -p site && cp supertrend_report.html site/index.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
       - name: Upload report artifact
         uses: actions/upload-artifact@v4
         with:
           name: supertrend-report
           path: supertrend_report.html
+
+  deploy:
+    needs: scan
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
