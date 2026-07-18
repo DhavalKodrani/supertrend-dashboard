@@ -242,6 +242,71 @@ SIGNAL_COLORS = {
 }
 
 
+SELECT_STYLE = ("padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;"
+                "background:#fff;color:#334155;font-size:13px;")
+
+VIEW_SCRIPT = """
+<script>
+function applyView() {
+  var tbody = document.getElementById('rows');
+  var rows = Array.prototype.slice.call(tbody.querySelectorAll('tr[data-signal]'));
+  var sig = document.getElementById('filterSignal').value;
+  var field = document.getElementById('sortField').value;
+  var asc = document.getElementById('sortOrder').value === 'asc';
+  var shown = 0;
+  rows.forEach(function (r) {
+    var visible = (sig === 'ALL' || r.dataset.signal === sig);
+    r.style.display = visible ? '' : 'none';
+    if (visible) shown++;
+  });
+  rows.sort(function (a, b) {
+    if (field === 'ticker') {
+      var cmp = a.dataset.ticker.localeCompare(b.dataset.ticker);
+      return asc ? cmp : -cmp;
+    }
+    var va = parseFloat(a.dataset[field]);
+    var vb = parseFloat(b.dataset[field]);
+    if (isNaN(va)) va = asc ? Infinity : -Infinity;
+    if (isNaN(vb)) vb = asc ? Infinity : -Infinity;
+    return asc ? va - vb : vb - va;
+  });
+  rows.forEach(function (r) { tbody.appendChild(r); });
+  var counter = document.getElementById('rowCount');
+  if (counter) counter.textContent = shown + ' of ' + rows.length + ' rows';
+}
+</script>"""
+
+
+def build_controls() -> str:
+    signal_opts = "".join(f'<option value="{s}">{s}</option>' for s in SIGNAL_ORDER)
+    return f"""
+    <div style="padding:0 24px 16px;display:flex;gap:16px;flex-wrap:wrap;align-items:center;
+                font-size:13px;color:#334155;">
+      <label>Filter:
+        <select id="filterSignal" onchange="applyView()" style="{SELECT_STYLE}">
+          <option value="ALL">All signals</option>{signal_opts}
+        </select>
+      </label>
+      <label>Sort by:
+        <select id="sortField" onchange="applyView()" style="{SELECT_STYLE}">
+          <option value="idx">Signal priority (default)</option>
+          <option value="ticker">Ticker</option>
+          <option value="close">Close</option>
+          <option value="emadist">vs EMA %</option>
+          <option value="stdist">vs ST %</option>
+          <option value="vol">Vol vs 10wk avg</option>
+        </select>
+      </label>
+      <label>Order:
+        <select id="sortOrder" onchange="applyView()" style="{SELECT_STYLE}">
+          <option value="asc">Ascending</option>
+          <option value="desc">Descending</option>
+        </select>
+      </label>
+      <span id="rowCount" style="color:#94a3b8;"></span>
+    </div>"""
+
+
 def build_html(full: pd.DataFrame, table: pd.DataFrame, scanned: int) -> str:
     ts = datetime.now().strftime("%A %d %B %Y, %H:%M UTC")
     counts = full["Signal"].value_counts().to_dict() if not full.empty else {}
@@ -255,10 +320,14 @@ def build_html(full: pd.DataFrame, table: pd.DataFrame, scanned: int) -> str:
         body_rows = '<tr><td colspan="8" style="padding:16px;text-align:center;">No results</td></tr>'
     else:
         body_rows = ""
-        for _, r in table.iterrows():
+        for i, (_, r) in enumerate(table.iterrows()):
             col = SIGNAL_COLORS[r["Signal"]]
+            num = lambda v: "" if v is None else v
             body_rows += f"""
-            <tr style="border-bottom:1px solid #e5e7eb;">
+            <tr style="border-bottom:1px solid #e5e7eb;" data-signal="{r['Signal']}"
+                data-ticker="{r['Ticker']}" data-idx="{i}" data-close="{r['Close']}"
+                data-emadist="{r['EMA_Dist%']}" data-stdist="{num(r['ST_Dist%'])}"
+                data-vol="{num(r['Vol_x_Avg'])}">
               <td style="padding:8px 12px;font-weight:600;">{r['Ticker']}</td>
               <td style="padding:8px 12px;"><span style="background:{col};color:#fff;
                   border-radius:6px;padding:2px 10px;font-size:12px;">{r['Signal']}</span></td>
@@ -282,6 +351,7 @@ def build_html(full: pd.DataFrame, table: pd.DataFrame, scanned: int) -> str:
          {scanned} tickers scanned (full US universe, max ${MAX_PRICE} + liquidity filter)</p>
     </div>
     <div style="padding:16px 24px;">{badges}</div>
+    {build_controls()}
     <table style="border-collapse:collapse;width:100%;font-size:14px;">
       <thead>
         <tr style="background:#f1f5f9;text-align:left;color:#334155;">
@@ -291,7 +361,7 @@ def build_html(full: pd.DataFrame, table: pd.DataFrame, scanned: int) -> str:
           <th style="padding:10px 12px;">Vol vs 10wk</th><th style="padding:10px 12px;">Week</th>
         </tr>
       </thead>
-      <tbody>{body_rows}</tbody>
+      <tbody id="rows">{body_rows}</tbody>
     </table>
     <p style="padding:16px 24px;color:#94a3b8;font-size:12px;">
       ENTRY = Supertrend flipped positive - RE-ENTRY = ST positive &amp; close crossed above 10EMA -
@@ -299,6 +369,8 @@ def build_html(full: pd.DataFrame, table: pd.DataFrame, scanned: int) -> str:
       BEARISH counted but not listed. Educational use only - not financial advice.
     </p>
   </div>
+  {VIEW_SCRIPT}
+  <script>applyView();</script>
 </body></html>"""
 
 
