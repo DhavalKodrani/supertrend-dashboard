@@ -1,11 +1,22 @@
-# One ticker per line — edit this list for your universe
+# FALLBACK ticker list - used only if the live NASDAQ Trader universe fetch fails.
+# The screener normally scans ALL US-listed stocks automatically (same source
+# as Stock_squeeze_screener). Edit freely - one symbol per line, '#' for comments.
+
+# From Stock_squeeze_screener fallback
+SIRI
+NOK
+SNAP
+PLUG
+FCEL
+RIOT
+MARA
+NIO
+SOFI
+CLOV
+
+# Personal watchlist
 DVLT
 RR
 PSTV
 RZLV
 APLD
-AAPL
-MSFT
-NVDA
-TSLA
-AMD
