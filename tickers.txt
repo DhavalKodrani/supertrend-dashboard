@@ -1,0 +1,11 @@
+# One ticker per line — edit this list for your universe
+DVLT
+RR
+PSTV
+RZLV
+APLD
+AAPL
+MSFT
+NVDA
+TSLA
+AMD
