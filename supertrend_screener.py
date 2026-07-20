@@ -37,7 +37,7 @@ EMA_LEN = 10
 WEEKS_OF_DATA = "3y"            # weekly bars for stable ATR/EMA
 
 # Universe (mirrors Stock_squeeze_screener defaults)
-MAX_PRICE = 20.0                # None = no price cap
+MAX_PRICE = None                # None = no price cap
 MIN_AVG_DOLLAR_VOL = 200_000    # liquidity floor (avg weekly $ vol / 5)
 FALLBACK_FILE = "tickers.txt"   # used only if live universe fetch fails
 MAX_TICKERS = 8000              # safety cap
@@ -348,7 +348,8 @@ def build_html(full: pd.DataFrame, table: pd.DataFrame, scanned: int) -> str:
     <div style="background:#0f172a;color:#fff;padding:20px 24px;">
       <h1 style="margin:0;font-size:20px;">Supertrend(10,3) + 10 EMA - Weekly Swing Dashboard</h1>
       <p style="margin:6px 0 0;color:#94a3b8;font-size:13px;">Generated {ts} - Weekly candles -
-         {scanned} tickers scanned (full US universe, max ${MAX_PRICE} + liquidity filter)</p>
+         {scanned} tickers scanned (full US universe,
+         {"no price cap" if MAX_PRICE is None else f"max ${MAX_PRICE}"} + liquidity filter)</p>
     </div>
     <div style="padding:16px 24px;">{badges}</div>
     {build_controls()}
